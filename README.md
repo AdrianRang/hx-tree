@@ -25,8 +25,8 @@ No AI used in the development of this TUI
 - [ ] Open both helix and hx-tree with `hxt path`.
 - [ ] give tmux session a name to avoid conflicts with other apps.
 - [X] Add file and folder icons
-  - [ ] add all icons in `icon_util.rs`
-- [ ] Reload button
+  - [X] add all icons in `icon_util.rs`
+- [X] Reload button
 - [ ] Load children dinamically instead of all at once
 - [ ] Add cursor support
 - [ ] Arrow keys on text input

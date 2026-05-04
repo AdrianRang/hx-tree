@@ -148,6 +148,7 @@ fn app(terminal: &mut DefaultTerminal, root: &mut Element) -> std::io::Result<()
                 KeyCode::Char('q') | KeyCode::Esc => break Ok(()),
                 KeyCode::Char(' ') | KeyCode::Right => {items.get(list_state.selected().unwrap()).unwrap().expand(); items = Element::to_indexed_list(root);},
                 KeyCode::Char('n') => new_file.enabled = true,
+                KeyCode::Char('r') => {root.children = Vec::new(); root.recursive_populate_children(); items = Element::to_indexed_list(root)},
                 _ => {}
             }
         } else {

@@ -12,6 +12,27 @@ pub fn get_icon(file_type: FILE_TYPE) -> String{
         FILE_TYPE::FILE(extension) => {
             match extension.as_str() {
                 "rs" => "",
+                "ts" => "",
+                "toml" => "",
+                "conf" => "",
+                "gradle" => "",
+                "json" => "",
+                "md" => "󰍔",
+                "lock" => "󰈡",
+                "gitignore" => "󰊢",
+                "tsx" => "󰜈",
+                "java" => "",
+                "js" => "",
+                "html" => "",
+                "css" => "",
+                "env" => "",
+                "c" => "",
+                "cpp" => "󰙲",
+                "csharp" => "󰌛",
+                "go" => "󰟓",
+                "py" => "󰌠",
+                "rb" => "󰴭",
+                "swift" => "󰛥",
                 _ => ""
             }
         }
