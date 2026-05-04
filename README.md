@@ -15,10 +15,18 @@ Use down arrow | j to move down
 Use right arrow | Space to expand a directrory or open a file
 Use n to create a new file
 
+---
+No AI used in the development of this TUI
+
+---
+
 ## Roadmap
 - [ ] Add file and folder renaming.
 - [ ] Open both helix and hx-tree with `hxt path`.
 - [ ] give tmux session a name to avoid conflicts with other apps.
-- [ ] Add file and folder icons
+- [X] Add file and folder icons
+  - [ ] add all icons in `icon_util.rs`
 - [ ] Reload button
 - [ ] Load children dinamically instead of all at once
+- [ ] Add cursor support
+- [ ] Arrow keys on text input

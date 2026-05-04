@@ -1,4 +1,8 @@
+mod icon_util;
+
 use std::{cell::Cell, process::Command};
+
+use icon_util::*;
 
 use ratatui::{DefaultTerminal, Frame, crossterm::event::{self, KeyCode}, layout::Constraint, style::{Color, Modifier}, widgets::{Block, Clear, List, ListState, Paragraph}};
 
@@ -133,7 +137,7 @@ fn app(terminal: &mut DefaultTerminal, root: &mut Element) -> std::io::Result<()
         enabled: false
     };
 
-    terminal.draw(|frame| render(frame, items.iter().map(|i| i.name.clone()).collect(), &mut list_state, new_file.clone()))?;
+    terminal.draw(|frame| render(frame, items.iter().map(|i| format_name(i.clone().clone())).collect(), &mut list_state, new_file.clone()))?;
 
     loop {
     if let Some(key) = event::read()?.as_key_press_event() { 
@@ -170,7 +174,7 @@ fn app(terminal: &mut DefaultTerminal, root: &mut Element) -> std::io::Result<()
             }
         }
 
-        terminal.draw(|frame| render(frame, items.iter().map(|i| ("┆ ".to_owned().repeat(i.path.split("/").count() - if i.is_directory {3} else {2} )) + i.name.as_str()).collect(), &mut list_state, new_file.clone()))?;
+        terminal.draw(|frame| render(frame, items.iter().map(|i| ("┆ ".to_owned().repeat(i.path.split("/").count() - if i.is_directory {3} else {2} )) + format_name(i.clone().clone()).as_str()).collect(), &mut list_state, new_file.clone()))?;
     }}
 }
 
