@@ -26,7 +26,11 @@ No AI used in the development of this TUI
 - [ ] give tmux session a name to avoid conflicts with other apps.
 - [X] Add file and folder icons
   - [X] add all icons in `icon_util.rs`
+  - [ ] Add color to icons
 - [X] Reload button
 - [ ] Load children dinamically instead of all at once
+- [ ] Add color to icons
 - [ ] Add cursor support
-- [ ] Arrow keys on text input
+- [X] Arrow keys on text input
+- [ ] Show controls on ui
+- [ ] Styles

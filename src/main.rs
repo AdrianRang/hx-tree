@@ -4,7 +4,7 @@ use std::{cell::Cell, process::Command};
 
 use icon_util::*;
 
-use ratatui::{DefaultTerminal, Frame, crossterm::event::{self, KeyCode}, layout::Constraint, style::{Color, Modifier}, widgets::{Block, Clear, List, ListState, Paragraph}};
+use ratatui::{DefaultTerminal, Frame, crossterm::event::{self, KeyCode}, layout::Constraint, style::{Color, Style}, text::{Line, Span}, widgets::{Block, Clear, List, ListState, Paragraph}};
 
 const MAX_CHILDREN: usize = 8;
 
@@ -28,8 +28,7 @@ struct TextInput {
 
 impl Element {
     fn root() -> Element {
-        let output = Command::new("sh").arg("-c").arg("echo \"${PWD##*/}\"").output().expect(":(");
-        let full_str = String::from_utf8(output.stdout).unwrap();
+        // let output = Command::new("sh").arg("-c").arg("echo \"${PWD##*/}\"").output().expect(":(");
         
         Element { name: String::from("."), path: String::from("./"), parent_element: None, children: Vec::new(), is_directory: true, is_expanded: Cell::new(true)}
     }
@@ -82,7 +81,6 @@ impl Element {
 
         if items.len() >= MAX_CHILDREN {return;}
 
-        //TODO: dont like that self.clone().
         items.iter().for_each(|i| self.children.push(Element::new(Box::new(self.clone()), i.clone())));
     }
 
@@ -153,8 +151,8 @@ fn app(terminal: &mut DefaultTerminal, root: &mut Element) -> std::io::Result<()
             }
         } else {
             match key.code {
-                KeyCode::Char(to_insert) => new_file.message.push(to_insert),
-                KeyCode::Backspace => { new_file.message.pop(); },
+                KeyCode::Char(to_insert) => {new_file.message.insert(new_file.cursor, to_insert); new_file.cursor += 1;},
+                KeyCode::Backspace => {if(new_file.cursor > 0) {new_file.cursor -= 1; new_file.message.remove(new_file.cursor);}} ,
                 KeyCode::Enter => {
                     let curr_item = items.get_mut(list_state.selected().unwrap()).unwrap();
                     if curr_item.is_directory {
@@ -169,20 +167,22 @@ fn app(terminal: &mut DefaultTerminal, root: &mut Element) -> std::io::Result<()
                     items = Element::to_indexed_list(root);
                     new_file.enabled = false;
                     new_file.message = String::new();
-                }
+                },
+                KeyCode::Left => if new_file.cursor > 0 {new_file.cursor -= 1},
+                KeyCode::Right => if new_file.cursor < new_file.message.len() {new_file.cursor += 1},
                 KeyCode::Esc => {new_file.enabled = false; new_file.message = String::new();},
                 _ => {}
             }
         }
 
-        terminal.draw(|frame| render(frame, items.iter().map(|i| ("┆ ".to_owned().repeat(i.path.split("/").count() - if i.is_directory {3} else {2} )) + format_name(i.clone().clone()).as_str()).collect(), &mut list_state, new_file.clone()))?;
+        terminal.draw(|frame| render(frame, items.iter().map(|i| format_name(i.clone().clone())).collect(), &mut list_state, new_file.clone()))?;
     }}
 }
 
 fn render(frame: &mut Frame, items: Vec<String>, list_state: &mut ListState, new_file: TextInput) {
     let list = List::new(items)
         .style(Color::White)
-        .highlight_style(Modifier::REVERSED)
+        .highlight_style(Style::new().bg(Color::Rgb(0xD2, 0x63, 0x30)))
         .highlight_symbol("> ");
     
     frame.render_stateful_widget(list, frame.area(), list_state);
@@ -192,7 +192,20 @@ fn render(frame: &mut Frame, items: Vec<String>, list_state: &mut ListState, new
         let centered_area = frame.area().centered(Constraint::Percentage(90), Constraint::Percentage(10));
 
         frame.render_widget(Clear, centered_area);
-        let paragraph = Paragraph::new(new_file.message).block(popup_block);
+        let message = new_file.message + " ";
+        
+        let parts: (String, &str, String) = (
+            message.get(0..new_file.cursor).unwrap().to_owned(),
+            message.get(new_file.cursor..new_file.cursor+1).unwrap(),
+            message.get(new_file.cursor+1..message.len()).unwrap().to_owned());
+        
+        let display = Line::from(vec![
+            Span::raw(parts.0),
+            Span::styled(parts.1.to_string(), Style::new().bg(Color::Rgb(0xD2, 0x63, 0x30))),
+            Span::raw(parts.2)
+        ]);
+        // display.insert(new_file.cursor, '_');
+        let paragraph = Paragraph::new(display).block(popup_block);
         frame.render_widget(paragraph, centered_area);
     }
 }
