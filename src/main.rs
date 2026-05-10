@@ -135,7 +135,7 @@ fn app(terminal: &mut DefaultTerminal, root: &mut Element) -> std::io::Result<()
         enabled: false
     };
 
-    terminal.draw(|frame| render(frame, items.iter().map(|i| format_name(i.clone().clone())).collect(), &mut list_state, new_file.clone()))?;
+    terminal.draw(|frame| render(frame, items.iter().map(|i| format_name((*i).clone())).collect(), &mut list_state, new_file.clone()))?;
 
     loop {
     if let Some(key) = event::read()?.as_key_press_event() { 
@@ -152,7 +152,7 @@ fn app(terminal: &mut DefaultTerminal, root: &mut Element) -> std::io::Result<()
         } else {
             match key.code {
                 KeyCode::Char(to_insert) => {new_file.message.insert(new_file.cursor, to_insert); new_file.cursor += 1;},
-                KeyCode::Backspace => {if(new_file.cursor > 0) {new_file.cursor -= 1; new_file.message.remove(new_file.cursor);}} ,
+                KeyCode::Backspace => {if new_file.cursor > 0 {new_file.cursor -= 1; new_file.message.remove(new_file.cursor);}} ,
                 KeyCode::Enter => {
                     let curr_item = items.get_mut(list_state.selected().unwrap()).unwrap();
                     if curr_item.is_directory {
@@ -175,7 +175,7 @@ fn app(terminal: &mut DefaultTerminal, root: &mut Element) -> std::io::Result<()
             }
         }
 
-        terminal.draw(|frame| render(frame, items.iter().map(|i| format_name(i.clone().clone())).collect(), &mut list_state, new_file.clone()))?;
+        terminal.draw(|frame| render(frame, items.iter().map(|i| format_name((*i).clone())).collect(), &mut list_state, new_file.clone()))?;
     }}
 }
 
