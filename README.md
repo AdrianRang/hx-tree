@@ -21,9 +21,10 @@ No AI used in the development of this TUI
 ---
 
 ## Roadmap
-- [ ] Add file and folder renaming.
+- [X] Add file and folder renaming.
+  - [ ] Keep expanded folders expanded on rename
 - [ ] Open both helix and hx-tree with `hxt path`.
-- [ ] give tmux session a name to avoid conflicts with other apps.
+- [ ] give tmux session a name to avoid conflicts with other apps and allow for multiple sessions.
 - [X] Add file and folder icons
   - [X] add all icons in `icon_util.rs`
   - [ ] Add color to icons

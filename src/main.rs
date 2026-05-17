@@ -6,7 +6,7 @@ use icon_util::*;
 
 use ratatui::{DefaultTerminal, Frame, crossterm::event::{self, KeyCode}, layout::Constraint, style::{Color, Style}, text::{Line, Span}, widgets::{Block, Clear, List, ListState, Paragraph}};
 
-const MAX_CHILDREN: usize = 8;
+const MAX_CHILDREN: usize = 9;
 
 #[derive(Clone, Debug)]
 struct Element {
@@ -135,32 +135,41 @@ fn app(terminal: &mut DefaultTerminal, root: &mut Element) -> std::io::Result<()
         enabled: false
     };
 
-    terminal.draw(|frame| render(frame, items.iter().map(|i| format_name((*i).clone())).collect(), &mut list_state, new_file.clone()))?;
+    let mut rename = TextInput {
+        title: String::from("Rename"),
+        message: String::new(),
+        cursor: 0,
+        enabled: false
+    };
+
+    terminal.draw(|frame| render(frame, items.iter().map(|i| format_name((*i).clone())).collect(), &mut list_state, vec![new_file.clone(), rename.clone()]))?;
 
     loop {
+    let current_item = *items.get(list_state.selected().unwrap_or(0)).unwrap();
+    
     if let Some(key) = event::read()?.as_key_press_event() { 
-        if !new_file.enabled {
+        if !new_file.enabled && !rename.enabled {
             match key.code {
                 KeyCode::Char('j') | KeyCode::Down => list_state.select_next(),
                 KeyCode::Char('k') | KeyCode::Up => list_state.select_previous(),
                 KeyCode::Char('q') | KeyCode::Esc => break Ok(()),
-                KeyCode::Char(' ') | KeyCode::Right => {items.get(list_state.selected().unwrap()).unwrap().expand(); items = Element::to_indexed_list(root);},
+                KeyCode::Char(' ') | KeyCode::Right => {current_item.expand(); items = Element::to_indexed_list(root);},
                 KeyCode::Char('n') => new_file.enabled = true,
+                KeyCode::Char('m') => {rename.enabled = true; rename.message = current_item.name.clone(); rename.cursor = current_item.name.rfind(".").unwrap_or(current_item.name.len()-1)},
                 KeyCode::Char('r') => {root.children = Vec::new(); root.recursive_populate_children(); items = Element::to_indexed_list(root)},
                 _ => {}
             }
-        } else {
+        } else if new_file.enabled {
             match key.code {
                 KeyCode::Char(to_insert) => {new_file.message.insert(new_file.cursor, to_insert); new_file.cursor += 1;},
                 KeyCode::Backspace => {if new_file.cursor > 0 {new_file.cursor -= 1; new_file.message.remove(new_file.cursor);}} ,
                 KeyCode::Enter => {
-                    let curr_item = items.get_mut(list_state.selected().unwrap()).unwrap();
-                    if curr_item.is_directory {
-                        curr_item.expand();
-                        let mut_item = get_with_path(root, curr_item.path.clone());
+                    if current_item.is_directory {
+                        current_item.expand();
+                        let mut_item = get_with_path(root, current_item.path.clone());
                         open(mut_item.new_child(new_file.message));
                     } else {
-                        let parent_path = curr_item.parent_element.as_ref().unwrap().clone().path;
+                        let parent_path = current_item.parent_element.as_ref().unwrap().clone().path;
                         let parent = get_with_path(root, parent_path);
                         open(parent.new_child(new_file.message));
                     }
@@ -173,13 +182,32 @@ fn app(terminal: &mut DefaultTerminal, root: &mut Element) -> std::io::Result<()
                 KeyCode::Esc => {new_file.enabled = false; new_file.message = String::new();},
                 _ => {}
             }
+        } else if rename.enabled {
+            match key.code {
+                KeyCode::Char(to_insert) => {rename.message.insert(rename.cursor, to_insert); rename.cursor += 1;},
+                KeyCode::Backspace => {if rename.cursor > 0 {rename.cursor -= 1; rename.message.remove(rename.cursor);}} ,
+                KeyCode::Enter => {
+                    // panic!("mv {} {}", current_item.path, current_item.path.clone().replace(current_item.name.as_str(), &rename.message));
+                    Command::new("mv").arg(current_item.path.clone()).arg(current_item.path.clone().replace(current_item.name.as_str(), &rename.message)).output()?;
+                    
+                    root.children = Vec::new();
+                    root.recursive_populate_children();
+                    items = Element::to_indexed_list(root);
+                    rename.enabled = false;
+                    rename.message = String::new();
+                },
+                KeyCode::Left => if rename.cursor > 0 {rename.cursor -= 1},
+                KeyCode::Right => if rename.cursor < rename.message.len() {rename.cursor += 1},
+                KeyCode::Esc => {rename.enabled = false; rename.message = String::new();},
+                _ => {}
+            }
         }
 
-        terminal.draw(|frame| render(frame, items.iter().map(|i| format_name((*i).clone())).collect(), &mut list_state, new_file.clone()))?;
+        terminal.draw(|frame| render(frame, items.iter().map(|i| format_name((*i).clone())).collect(), &mut list_state, vec![new_file.clone(), rename.clone()]))?;
     }}
 }
 
-fn render(frame: &mut Frame, items: Vec<String>, list_state: &mut ListState, new_file: TextInput) {
+fn render(frame: &mut Frame, items: Vec<String>, list_state: &mut ListState, inputs: Vec<TextInput>) {
     let list = List::new(items)
         .style(Color::White)
         .highlight_style(Style::new().bg(Color::Rgb(0xD2, 0x63, 0x30)))
@@ -187,24 +215,30 @@ fn render(frame: &mut Frame, items: Vec<String>, list_state: &mut ListState, new
     
     frame.render_stateful_widget(list, frame.area(), list_state);
 
-    if new_file.enabled {
-        let popup_block = Block::bordered().title(new_file.title);
+    for input in inputs {
+        render_input(frame, input);
+    }
+}
+
+fn render_input(frame: &mut Frame, input: TextInput) {
+    if input.enabled {
+        let popup_block = Block::bordered().title(input.title);
         let centered_area = frame.area().centered(Constraint::Percentage(90), Constraint::Percentage(10));
 
         frame.render_widget(Clear, centered_area);
-        let message = new_file.message + " ";
+        let message = input.message + " ";
         
         let parts: (String, &str, String) = (
-            message.get(0..new_file.cursor).unwrap().to_owned(),
-            message.get(new_file.cursor..new_file.cursor+1).unwrap(),
-            message.get(new_file.cursor+1..message.len()).unwrap().to_owned());
+            message.get(0..input.cursor).unwrap().to_owned(),
+            message.get(input.cursor..input.cursor+1).unwrap(),
+            message.get(input.cursor+1..message.len()).unwrap().to_owned());
         
         let display = Line::from(vec![
             Span::raw(parts.0),
             Span::styled(parts.1.to_string(), Style::new().bg(Color::Rgb(0xD2, 0x63, 0x30))),
             Span::raw(parts.2)
         ]);
-        // display.insert(new_file.cursor, '_');
+        // display.insert(input.cursor, '_');
         let paragraph = Paragraph::new(display).block(popup_block);
         frame.render_widget(paragraph, centered_area);
     }
