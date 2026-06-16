@@ -35,3 +35,8 @@ No AI used in the development of this TUI
 - [X] Arrow keys on text input
 - [ ] Show controls on ui
 - [ ] Styles
+- [ ] Change to use std::fs (see note 1)
+- [ ] Compress multiple nested files to single line
+
+#### Note 1
+I didn't use `std::fs` because I wanted more of a challenge and prectice using bash, but I've had enough and want to rewrite everithing using a more sane approach

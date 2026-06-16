@@ -6,7 +6,7 @@ use icon_util::*;
 
 use ratatui::{DefaultTerminal, Frame, crossterm::event::{self, KeyCode}, layout::Constraint, style::{Color, Style}, text::{Line, Span}, widgets::{Block, Clear, List, ListState, Paragraph}};
 
-const MAX_CHILDREN: usize = 9;
+const MAX_CHILDREN: usize = 10;
 
 #[derive(Clone, Debug)]
 struct Element {
@@ -142,7 +142,9 @@ fn app(terminal: &mut DefaultTerminal, root: &mut Element) -> std::io::Result<()
         enabled: false
     };
 
-    terminal.draw(|frame| render(frame, items.iter().map(|i| format_name((*i).clone())).collect(), &mut list_state, vec![new_file.clone(), rename.clone()]))?;
+    terminal.draw(|frame|
+        render(frame, items.iter().map(|i| format_name((*i).clone())).collect(), &mut list_state, vec![new_file.clone(), rename.clone()])
+    )?;
 
     loop {
     let current_item = *items.get(list_state.selected().unwrap_or(0)).unwrap();
@@ -215,6 +217,15 @@ fn render(frame: &mut Frame, items: Vec<String>, list_state: &mut ListState, inp
     
     frame.render_stateful_widget(list, frame.area(), list_state);
 
+    let controls = Paragraph::new(vec![
+        Line::from(vec![
+            Span::raw("ꜛ|j"),
+        ])
+    ]);
+
+    frame.render_widget(controls, frame.area().centered_vertically(Constraint::Length(1)));
+    
+
     for input in inputs {
         render_input(frame, input);
     }
@@ -223,7 +234,7 @@ fn render(frame: &mut Frame, items: Vec<String>, list_state: &mut ListState, inp
 fn render_input(frame: &mut Frame, input: TextInput) {
     if input.enabled {
         let popup_block = Block::bordered().title(input.title);
-        let centered_area = frame.area().centered(Constraint::Percentage(90), Constraint::Percentage(10));
+        let centered_area = frame.area().centered(Constraint::Percentage(90), Constraint::Length(1));
 
         frame.render_widget(Clear, centered_area);
         let message = input.message + " ";
